@@ -29,12 +29,10 @@ services:
     runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
-    staticPublishPath: frontend/dist
+    staticPublishPath: dist
     envVars:
       - key: NODE_VERSION
         value: 20
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: shared-expenses-backend
-          property: host
+        value: https://shared-expenses-backend.onrender.com
+
