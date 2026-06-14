@@ -1,0 +1,35 @@
+{
+  "name": "shared-expenses-backend",
+  "version": "1.0.0",
+  "description": "Backend for Shared Expenses App",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "db:migrate": "npx prisma migrate dev",
+    "db:seed": "node prisma/seed.js",
+    "db:studio": "npx prisma studio",
+    "test": "jest --coverage"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "express-validator": "^7.3.2",
+    "helmet": "^8.2.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
+    "papaparse": "^5.5.3"
+  },
+  "devDependencies": {
+    "@prisma/client": "^5.22.0",
+    "jest": "^30.4.2",
+    "nodemon": "^3.1.14",
+    "prisma": "^5.22.0"
+  }
+}

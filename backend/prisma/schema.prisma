@@ -1,0 +1,171 @@
+// Prisma schema for Shared Expenses App
+// Uses SQLite as the relational database (for local execution and setup simplicity)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  groupsCreated  Group[]         @relation("GroupCreator")
+  memberships    GroupMember[]
+  expensesPaid   Expense[]       @relation("ExpensePayer")
+  expenseSplits  ExpenseSplit[]
+  settlementsOut Settlement[]    @relation("SettlementFrom")
+  settlementsIn  Settlement[]    @relation("SettlementTo")
+  imports        Import[]
+  anomalyApprovals ImportAnomaly[] @relation("AnomalyApprover")
+
+  @@map("users")
+}
+
+model Group {
+  id          Int      @id @default(autoincrement())
+  name         String
+  description String?
+  createdBy   Int      @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  creator     User          @relation("GroupCreator", fields: [createdBy], references: [id])
+  members     GroupMember[]
+  expenses    Expense[]
+  settlements Settlement[]
+  imports     Import[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  id       Int       @id @default(autoincrement())
+  groupId  Int       @map("group_id")
+  userId   Int       @map("user_id")
+  joinedAt DateTime  @default(now()) @map("joined_at")
+  leftAt   DateTime? @map("left_at")
+  role     String    @default("MEMBER") // SQLite uses string for enums in schema mapping
+
+  // Relations
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId, joinedAt])
+  @@map("group_members")
+}
+
+model Expense {
+  id          Int          @id @default(autoincrement())
+  groupId     Int          @map("group_id")
+  description String
+  amount      Decimal
+  currency    String       @default("INR")
+  splitType   String       @map("split_type")
+  paidById    Int          @map("paid_by")
+  expenseDate DateTime     @map("expense_date")
+  notes       String?
+  isSettlement Boolean     @default(false) @map("is_settlement")
+  importId    Int?         @map("import_id")
+  importRow   Int?         @map("import_row")
+  status      String       @default("ACTIVE")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  group    Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  paidBy   User           @relation("ExpensePayer", fields: [paidById], references: [id])
+  import   Import?        @relation(fields: [importId], references: [id])
+  splits   ExpenseSplit[]
+
+  @@map("expenses")
+}
+
+model ExpenseSplit {
+  id            Int     @id @default(autoincrement())
+  expenseId     Int     @map("expense_id")
+  userId        Int     @map("user_id")
+  shareValue    Decimal @map("share_value")
+  owedAmount    Decimal @map("owed_amount")
+  owedAmountInr Decimal @map("owed_amount_inr")
+
+  // Relations
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([expenseId, userId])
+  @@map("expense_splits")
+}
+
+model Settlement {
+  id         Int      @id @default(autoincrement())
+  groupId    Int      @map("group_id")
+  fromUserId Int      @map("from_user_id")
+  toUserId   Int      @map("to_user_id")
+  amount     Decimal
+  currency   String   @default("INR")
+  settledAt  DateTime @map("settled_at")
+  notes      String?
+  importId   Int?     @map("import_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  group    Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  fromUser User   @relation("SettlementFrom", fields: [fromUserId], references: [id])
+  toUser   User   @relation("SettlementTo", fields: [toUserId], references: [id])
+  import   Import? @relation(fields: [importId], references: [id])
+
+  @@map("settlements")
+}
+
+model Import {
+  id           Int      @id @default(autoincrement())
+  groupId      Int      @map("group_id")
+  filename     String
+  importedBy   Int      @map("imported_by")
+  totalRows    Int      @default(0) @map("total_rows")
+  importedRows Int      @default(0) @map("imported_rows")
+  skippedRows  Int      @default(0) @map("skipped_rows")
+  status       String   @default("PENDING")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  group     Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  importer  User            @relation(fields: [importedBy], references: [id])
+  anomalies ImportAnomaly[]
+  expenses  Expense[]
+  settlements Settlement[]
+
+  @@map("imports")
+}
+
+model ImportAnomaly {
+  id               Int           @id @default(autoincrement())
+  importId         Int           @map("import_id")
+  rowNumber        Int           @map("row_number")
+  anomalyType      String        @map("anomaly_type")
+  severity         String
+  description      String
+  originalValue    String        @map("original_value")
+  resolvedValue    String?       @map("resolved_value")
+  actionTaken      String        @map("action_taken")
+  requiresApproval Boolean       @default(false) @map("requires_approval")
+  approvedById     Int?          @map("approved_by")
+  approvedAt       DateTime?     @map("approved_at")
+
+  // Relations
+  import     Import @relation(fields: [importId], references: [id], onDelete: Cascade)
+  approvedBy User?  @relation("AnomalyApprover", fields: [approvedById], references: [id])
+
+  @@map("import_anomalies")
+}
