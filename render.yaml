@@ -34,5 +34,5 @@ services:
       - key: NODE_VERSION
         value: 20
       - key: VITE_API_URL
-        value: https://shared-expenses-backend.onrender.com
+        value: https://shared-expenses-backend-q9ey.onrender.com
 
