@@ -2,7 +2,7 @@ services:
   # Backend Web Service
   - type: web
     name: shared-expenses-backend
-    env: node
+    runtime: node
     plan: free
     rootDir: backend
     buildCommand: npm install && npx prisma generate
@@ -26,7 +26,7 @@ services:
   # Frontend Static Site
   - type: web
     name: shared-expenses-frontend
-    env: static
+    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: frontend/dist
